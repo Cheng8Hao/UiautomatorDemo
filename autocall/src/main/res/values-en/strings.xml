@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">AutoAnswer</string>
+    <string name="autoanswer">This apk is running on the CooperatingPhone, it will automatically answer the call after running.</string>
+</resources>
