@@ -1,1 +1,1 @@
-include ':uiauto', ':mytestcast', ':autocall', ':powerconsumptiontest'
+include ':uiauto', ':mytestcast', ':autocall', ':powerconsumptiontest', ':test', ':AutoAnswerAndCall', ':AlarmServiceTask'

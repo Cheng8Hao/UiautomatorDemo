@@ -2,10 +2,13 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/AlarmServiceTask/AlarmServiceTask.iml" filepath="$PROJECT_DIR$/AlarmServiceTask/AlarmServiceTask.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AutoAnswerAndCall/AutoAnswerAndCall.iml" filepath="$PROJECT_DIR$/AutoAnswerAndCall/AutoAnswerAndCall.iml" />
       <module fileurl="file://$PROJECT_DIR$/UiautomatorDemo.iml" filepath="$PROJECT_DIR$/UiautomatorDemo.iml" />
       <module fileurl="file://$PROJECT_DIR$/autocall/autocall.iml" filepath="$PROJECT_DIR$/autocall/autocall.iml" />
       <module fileurl="file://$PROJECT_DIR$/mytestcast/mytestcast.iml" filepath="$PROJECT_DIR$/mytestcast/mytestcast.iml" />
       <module fileurl="file://$PROJECT_DIR$/powerconsumptiontest/powerconsumptiontest.iml" filepath="$PROJECT_DIR$/powerconsumptiontest/powerconsumptiontest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/test/test.iml" filepath="$PROJECT_DIR$/test/test.iml" />
       <module fileurl="file://$PROJECT_DIR$/uiauto/uiauto.iml" filepath="$PROJECT_DIR$/uiauto/uiauto.iml" />
     </modules>
   </component>

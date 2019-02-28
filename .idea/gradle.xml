@@ -8,9 +8,12 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/AlarmServiceTask" />
+            <option value="$PROJECT_DIR$/AutoAnswerAndCall" />
             <option value="$PROJECT_DIR$/autocall" />
             <option value="$PROJECT_DIR$/mytestcast" />
             <option value="$PROJECT_DIR$/powerconsumptiontest" />
+            <option value="$PROJECT_DIR$/test" />
             <option value="$PROJECT_DIR$/uiauto" />
           </set>
         </option>

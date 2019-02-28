@@ -7,13 +7,10 @@ package com.example.powerconsumptiontest;
 import android.os.RemoteException;
 import android.support.test.filters.SdkSuppress;
 import android.support.test.runner.AndroidJUnit4;
-import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
 import android.util.Log;
-import android.widget.RelativeLayout;
-import android.widget.Switch;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -27,19 +24,61 @@ import static android.support.test.InstrumentationRegistry.getInstrumentation;
 public class demo {
     private static final String TAG = "demo";
     private static UiDevice mDevice = UiDevice.getInstance(getInstrumentation());
+    //获取测试包的Context
+
+
+    //测试开始前运行（每个@Test运行前都会运行一次），如打开应用等
+    @Before
+    public void before() {
+        Log.d(TAG, "before: ");
+        /*try {
+            if (!mDevice.isScreenOn()) {
+                Log.e(TAG, "isScreenOn==" + mDevice.isScreenOn());
+                mDevice.wakeUp();
+            }
+        } catch (RemoteException e) {
+            Log.e(TAG, "Device wakeUp exception!");
+            e.printStackTrace();
+        }*/
+    }
 
     @Test
-    public void test_001() {
+    public void test_airplanMode_Open() {
+        Log.d(TAG, "test_airplanMode_Open: ");
+        getInstrumentation().getUiAutomation().executeShellCommand("settings put  global airplane_mode_on 1");
+    }
+
+    @Test
+    public void test_airplanMode_Close() {
+        Log.d(TAG, "test_airplanMode_Close: ");
+        getInstrumentation().getUiAutomation().executeShellCommand("settings put  global airplane_mode_on 0");
+    }
+
+    @Test
+    public void test_enableData() {
+        Log.d(TAG, "test_enableData: ");
+        getInstrumentation().getUiAutomation().executeShellCommand("svc data enable");
+    }
+
+    @Test
+    public void test_disableData() {
+        Log.d(TAG, "test_disableData: ");
+        getInstrumentation().getUiAutomation().executeShellCommand("svc data disable");
+    }
+
+    @Test
+    public void test_wakeUp() throws RemoteException {
+        Log.d(TAG, "test_wakeUp: ");
         try {
             mDevice.wakeUp();
         } catch (RemoteException e) {
             e.printStackTrace();
         }
-        getInstrumentation().getUiAutomation().executeShellCommand("svc wifi disable");
     }
 
     @Test
-    public void test_002() {
+    public void test_sleep() throws RemoteException {
+        Log.d(TAG, "test_sleep: ");
         try {
             mDevice.sleep();
         } catch (RemoteException e) {
@@ -48,23 +87,9 @@ public class demo {
     }
 
     @Test
-    public void test_003() {
-        try {
-            mDevice.wakeUp();
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-
-       /* UiObject2 ui = mDevice.findObject(By.clazz(RelativeLayout.class).hasChild(By.text("Turn mute")));
-        UiObject2 uiObjectpa = ui.getParent();
-        UiObject2 switchi = uiObjectpa.findObject(By.clazz(Switch.class));
-        boolean checked = switchi.isChecked();
-        Log.d(TAG, "test_001: checked" + checked);*/
-
-        UiObject2 switchobjct = mDevice.findObject(By.clazz(RelativeLayout.class).hasChild(By.text("Turn mute"))).getParent().findObject(By.clazz(Switch.class));
-        boolean checked = switchobjct.isChecked();
-        Log.d(TAG, "test_001: checked" + checked);
-
-
+    public void test_brightness() throws RemoteException {
+        Log.d(TAG, "test_brightness: ");
     }
+
 }
+

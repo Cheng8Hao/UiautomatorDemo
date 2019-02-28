@@ -4,7 +4,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.graphics.Rect;
+import android.media.AudioManager;
 import android.os.Environment;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.SdkSuppress;
@@ -54,10 +56,15 @@ public class Mytest {
     //获取测试包的Context
     Context testContext = InstrumentationRegistry.getContext();
     //获取被测应用的Context
-    //Context testedContext = InstrumentationRegistry.getTargetContext().getApplicationContext();
+    static Context applicationContext = InstrumentationRegistry.getTargetContext().getApplicationContext();
     private static UiDevice mDevice = UiDevice.getInstance(getInstrumentation());
     int displayHeight = mDevice.getDisplayHeight();
     int displayWidth = mDevice.getDisplayWidth();
+    private static final String setscreen_off_timeout_10mins = "settings put system screen_off_timeout 610000";
+    private static final String setscreen_off_timeout_2s = "settings put system screen_off_timeout 2000";
+    private static final String setscreen_off_timeout_2mins = "settings put system screen_off_timeout 120000";
+    private static final String setbrightness_0 = "settings put  system screen_brightness 0";
+    private static final String setbrightness_255 = "settings put  system screen_brightness 255";
     private static final String endCall = "input  keyevent  KEYCODE_ENDCALL";
     private static final String dialCMD = "am start -a android.intent.action.CALL tel:";
     private static final String ChormePackageName = "com.android.chrome";
@@ -73,17 +80,17 @@ public class Mytest {
     private static final String GamesPackageName = "com.outfit7.talkingtom2free";
     private static final String settingsPackageName = "com.android.settings";
     private static final String QQPackageName = "com.tencent.qqlite";
+    private static final String PhonePackageName = "com.android.phone";
+    private static final String uiautoPackageName = "com.example.MyTest";
     private static final String FILE_NAME = "/uiautomatorTest.txt";
     private static final int timeOut = 5000;//5秒
-    private static final int fifteenminstime = 1 * 60 * 1000;//15分钟
+    private static final int fifteenminstime = 15 * 60 * 1000;//15分钟
     private static final int tenseconds = 10 * 1000;//10秒
+    private static final int thirtyseconds = 30 * 1000;//10秒
     private static final int tenmins = 30 * 1000;//10 * 60 * 1000;//10分钟
     private static final int onemins = 60 * 1000;//1分钟
     private static int testcaseNo = 0; //测试case的序列号
     private static final String configFILE_NAME = "/myconfig.xml";
-/*    private static String qq_num = "18067112583";
-    private static String qq_password = "chenghaoasd789";*/
-
 
     //get from config.xml 先注释了方便debug
     private static String CooperatingPhoneNum;
@@ -133,14 +140,17 @@ public class Mytest {
         //获取权限
         getInstrumentation().getUiAutomation().executeShellCommand("pm grant " + InstrumentationRegistry.getTargetContext().getPackageName() + " android.permission.WRITE_EXTERNAL_STORAGE");
         getInstrumentation().getUiAutomation().executeShellCommand("pm grant " + InstrumentationRegistry.getTargetContext().getPackageName() + " android.permission.READ_EXTERNAL_STORAGE");
+        getInstrumentation().getUiAutomation().executeShellCommand("pm grant " + InstrumentationRegistry.getTargetContext().getPackageName() + " android.permission.MODIFY_AUDIO_SETTINGS");
         //获取包名
         getlistpackages();
         //每次开始测试前先删除测试报告
         deletefile();
         //设置手机熄灭屏幕时间，除去熄灭屏幕解锁方式
         setDisplayTimeandScreenLock();
+        setMaxStreamVolume();
+        mDevice.executeShellCommand(setbrightness_255);
         // 序号	测试项描述	测试开始时间	电池电压（mV）	电池电量(%)	测试结束时间	电池电压（mV）	电池电量(%) 单项测试时长（mins）	备注
-        write("Serial number" + "\t" + "Description" + "\t" + "StartTime" + "\t" + "Battery voltage(mV)" + "\t" + "Battery electricity(%)" + "\t" + "EndTime" + "\t" + "Battery voltage(mV)" + "\t" + "Battery electricity(%)" + "\t" + "Item test time(min)" + "\t" + "note" + "\t" + "\n");
+        write("SerialNumber" + "\t" + "Description" + "\t" + "StartTime" + "\t" + "Voltage(mV)" + "\t" + "Electricity(%)" + "\t" + "EndTime" + "\t" + "Voltage(mV)" + "\t" + "Electricity(%)" + "\t" + "ItemTestTime(mins)" + "\t" + "Note" + "\t" + "\n");
         //测试开始前获取config文件信息
         getcongif();
     }
@@ -149,6 +159,8 @@ public class Mytest {
     public static void afterClass() {
         //测试项目结束时运行（仅一次），如卸载应用等
         Log.d(TAG, "afterClass: ");
+        //不需要打开uiauto.apk了,关机可以接收到寡薄
+        //startApp(uiautoPackageName,timeOut);
     }
 
     @Before
@@ -177,14 +189,19 @@ public class Mytest {
         Log.d(TAG, "after: ");
     }
 
-    //开机等待10mins
+    //登陆应用挂在后台，等待10mins
     @Test
     public void test_001() throws InterruptedException, UiObjectNotFoundException, IOException {
+        //mDevice.executeShellCommand(setscreen_off_timeout_10mins);
         int startTime = (int) System.currentTimeMillis();
         write(testcaseNo + "\t" + "Boot Then Standby" + "\t" + getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t");
-        sleep(tenmins);
+        PowerManager pm = (PowerManager) applicationContext.getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wk = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+        wk.acquire();
+        sleep(bootThenStandby_time);
+        wk.release();
         int endTime = (int) System.currentTimeMillis();
-        int testTime = ((endTime - startTime) / 1000) / 60;
+        int testTime = calculateTime(endTime, startTime);    //((endTime - startTime) / 1000) / 60;
         Log.d(TAG, "test_001: testTime=" + testTime);
         write(getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t" + testTime + "\t" + "test finish" + "\t" + "\n");
     }
@@ -192,19 +209,25 @@ public class Mytest {
     //call
     @Test
     public void test_002() throws InterruptedException, UiObjectNotFoundException, IOException, RemoteException {
+        PowerManager pm = (PowerManager) applicationContext.getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wk = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+        mDevice.executeShellCommand(setscreen_off_timeout_2s);
         write(testcaseNo + "\t" + "Call test" + "\t" + getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t");
         int startTime = (int) System.currentTimeMillis();
         int i;
+        wk.acquire();
         for (i = 0; i < call_count; i++) {
-            Log.d(TAG, "test_002: i===" + i);
+            //Log.d(TAG, "test_002: i===" + i);
             mDevice.executeShellCommand(dialCMD + CooperatingPhoneNum);
-            Log.d(TAG, "test_002: dialstart");
-            sleep(call_times);
+            //Log.d(TAG, "test_002: dialstart");
+            setSpeakerphoneOn(true);
+            sleep(call_times + 10000);
             mDevice.executeShellCommand(endCall);
-            Log.d(TAG, "test_002: endCall");
+            // Log.d(TAG, "test_002: endCall");
         }
+        wk.release();
         int endTime = (int) System.currentTimeMillis();
-        int testTime = ((endTime - startTime) / 1000) / 60;
+        int testTime = calculateTime(endTime, startTime);    //((endTime - startTime) / 1000) / 60;
         write(getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t" + testTime + "\t" + "test finish" + "\t" + "\n");
     }
 
@@ -213,21 +236,21 @@ public class Mytest {
     public void test_003() throws InterruptedException, UiObjectNotFoundException, IOException {
         write(testcaseNo + "\t" + "EndCall test" + "\t" + getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t");
         int startTime = (int) System.currentTimeMillis();
+        PowerManager pm = (PowerManager) applicationContext.getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wk = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+        wk.acquire();
         int i;
         for (i = 0; i < endCall_count; i++) {
-            Log.d(TAG, "test_003: i===" + i);
-            mDevice.executeShellCommand(dialCMD + UTDPhoneNum);
-            Log.d(TAG, "test_003: dialCall");
-            Log.d(TAG, "test_003: sleep before");
+            mDevice.executeShellCommand(dialCMD + "10010");//CooperatingPhoneNum);
             sleep(endCall_times);
-            Log.d(TAG, "test_003: sleep after");
             mDevice.executeShellCommand(endCall);
-            Log.d(TAG, "test_003: endCall");
         }
+        wk.release();
         int endTime = (int) System.currentTimeMillis();
-        int testTime = ((endTime - startTime) / 1000) / 60;
+        int testTime = calculateTime(endTime, startTime);    //((endTime - startTime) / 1000) / 60;
         write(getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t" + testTime + "\t" + "test finish" + "\t" + "\n");
-
+        closeAPP(PhonePackageName);
+        mDevice.executeShellCommand(setscreen_off_timeout_2mins);
     }
 
     //camera
@@ -280,7 +303,7 @@ public class Mytest {
             }
         }
         int endTime = (int) System.currentTimeMillis();
-        int testTime = ((endTime - startTime) / 1000) / 60;
+        int testTime = calculateTime(endTime, startTime);    //((endTime - startTime) / 1000) / 60;
         closeAPP(CameraPackageName);
         write(getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t" + testTime + "\t" + "test finish" + "\t" + "\n");
     }
@@ -315,7 +338,7 @@ public class Mytest {
             }
         }
         int endTime = (int) System.currentTimeMillis();
-        int testTime = ((endTime - startTime) / 1000) / 60;//mins
+        int testTime = calculateTime(endTime, startTime);    //((endTime - startTime) / 1000) / 60;//mins
         closeAPP(CameraPackageName);
         write(getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t" + testTime + "\t" + "test finish" + "\t" + "\n");
     }
@@ -325,14 +348,32 @@ public class Mytest {
     public void test_006() throws InterruptedException, UiObjectNotFoundException, IOException {
         int startTime = (int) System.currentTimeMillis();
         write(testcaseNo + "\t" + "QQ + music" + "\t" + getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t");
+        //使用扬声器外放，即使已经插入耳机
+        AudioManager mAudioManager = (AudioManager) applicationContext.getSystemService(Context.AUDIO_SERVICE);
+        int maxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        Log.d(TAG, "test_006: maxVolume=" + maxVolume);
+        mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume, 0); //音量调到最大
+        mAudioManager.setMicrophoneMute(false);
+        mAudioManager.setSpeakerphoneOn(false);
+        mAudioManager.setMode(AudioManager.STREAM_MUSIC);
         //play music begin
         startApp(MusicPackageName, timeOut);
-        sleep(3000);
+        sleep(10000);
         if (MusicPackageName.equals(googledMusicPackageName)) {
+            Log.d(TAG, "test_006: open googledMusic ");
+            //左滑
+            mDevice.swipe(displayWidth - 1, displayHeight / 2, displayWidth / 3, displayHeight / 2, displayWidth / 9);
+            mDevice.swipe(displayWidth - 1, displayHeight / 2, displayWidth / 3, displayHeight / 2, displayWidth / 9);
+            UiObject Shuffle_all = new UiObject(new UiSelector().text("Shuffle all"));
+            Shuffle_all.clickAndWaitForNewWindow();
+        }
+
+        /*if (MusicPackageName.equals(googledMusicPackageName)) {
             Log.d(TAG, "test_006: open googledMusic ");
             UiObject skip = new UiObject(new UiSelector().resourceId("com.google.android.music:id/skip_button"));
             skip.clickAndWaitForNewWindow();
             //左滑
+            mDevice.swipe(displayWidth - 10, displayHeight / 2, displayWidth / 3, displayHeight / 2, displayWidth / 9);
             mDevice.swipe(displayWidth - 10, displayHeight / 2, displayWidth / 3, displayHeight / 2, displayWidth / 9);
             UiObject Shuffle_all = new UiObject(new UiSelector().text("Shuffle all"));
             Shuffle_all.clickAndWaitForNewWindow();
@@ -340,7 +381,8 @@ public class Mytest {
             song.clickAndWaitForNewWindow();
             UiObject repeat = new UiObject(new UiSelector().resourceId("com.google.android.music:id/repeat"));
             repeat.clickAndWaitForNewWindow();
-        } else if (MusicPackageName.equals(androidMusicPackageName)) {
+        }*/
+        else if (MusicPackageName.equals(androidMusicPackageName)) {
             Log.d(TAG, "test_006: open androidMusic ");
             UiObject Playlists = new UiObject(new UiSelector().text("Playlists"));
             Playlists.clickAndWaitForNewWindow();
@@ -355,7 +397,9 @@ public class Mytest {
         Log.d(TAG, "test_006: play music end");
         //play music end
         //start qq
+        sleep(2000);
         startApp(QQPackageName, timeOut);
+        sleep(5000);
         //qq因为有验证码，需要在测试前人工登陆，不然测试会中断
         UiObject contact = new UiObject(new UiSelector().text("联系人"));
         contact.clickAndWaitForNewWindow();
@@ -368,25 +412,25 @@ public class Mytest {
             Log.d(TAG, "test_006: while true");
             UiObject input = new UiObject(new UiSelector().resourceId("com.tencent.qqlite:id/input"));
             input.setText("hello?");
-            sleep(5000);
+            sleep(14000);
             UiObject send = new UiObject(new UiSelector().resourceId("com.tencent.qqlite:id/fun_btn"));
             send.clickAndWaitForNewWindow();
-            sleep(5000);
+            sleep(14000);
             endTime = (int) System.currentTimeMillis();
-            Log.d(TAG, "test_006: startTime="+startTime);
-            Log.d(TAG, "test_006: endTime="+endTime);
-            int timegap=Math.abs(endTime - startTime);
-            Log.d(TAG, "test_006: timegap="+timegap);
-            if (timegap>= qqtalk_time) {
+            Log.d(TAG, "test_006: startTime=" + startTime);
+            Log.d(TAG, "test_006: endTime=" + endTime);
+            int timegap = Math.abs(endTime - startTime);
+            Log.d(TAG, "test_006: timegap=" + timegap);
+            if (timegap >= qqtalk_time) {
                 Log.d(TAG, "test_006: break");
                 break;
             }
         }
         closeAPP(QQPackageName);
-        Log.d(TAG, "test_006: startTime="+startTime);
-        Log.d(TAG, "test_006: endTime="+endTime);
-        int testTime = ((endTime - startTime) / 1000) / 60;
-        Log.d(TAG, "test_006: testTime="+testTime);
+        Log.d(TAG, "test_006: startTime=" + startTime);
+        Log.d(TAG, "test_006: endTime=" + endTime);
+        int testTime = calculateTime(endTime, startTime);    //((endTime - startTime) / 1000) / 60;
+        Log.d(TAG, "test_006: testTime=" + testTime);
         write(getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t" + testTime + "\t" + "test finish" + "\t" + "\n");
     }
 
@@ -398,7 +442,7 @@ public class Mytest {
         startApp(ChormePackageName, timeOut); //启动app
         //得到浏览器中的网页输入框
         boolean ispass = true;
-        int testTime = -1;
+        int testTime;
         int endTime = -1;
         while (ispass) {
             UiObject edit = new UiObject(new UiSelector().className("android.widget.EditText"));
@@ -407,26 +451,27 @@ public class Mytest {
             mDevice.pressDelete();
             edit.setText("https://www.baidu.com");
             mDevice.pressEnter();//回车进行浏览，在部分手机不支持回车浏览，可以使用上面的方式得到浏览按钮在点击进行浏览
-            sleep(tenseconds);
+            sleep(thirtyseconds);
             endTime = (int) System.currentTimeMillis();
-            if (endTime - startTime > openWebTest_time) {
+            if (Math.abs(endTime - startTime) > openWebTest_time) {
                 Log.d(TAG, "case1:startTime " + startTime);
                 Log.d(TAG, "case1: endTime=" + endTime);
                 ispass = false;
             }
         }
-        testTime = ((endTime - startTime) / 1000) / 60;   //分钟
+        testTime = calculateTime(endTime, startTime);    //((endTime - startTime) / 1000) / 60;   //分钟
         closeAPP(ChormePackageName);
         write(getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t" + testTime + "\t" + "test finish" + "\t" + "\n");
     }
 
-    //sendmail
+    //sendmail gmail也需要短信验证，所以需要先登陆
     @Test
     public void test_008() throws InterruptedException, UiObjectNotFoundException, IOException {
         write(testcaseNo + "\t" + "SendMail test" + "\t" + getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t");
         int startTime = (int) System.currentTimeMillis();
         startApp(GmailPackageName, timeOut);
-        sleep(5000);
+        sleep(20000);
+        /*
         UiObject GOT_IT = new UiObject(new UiSelector().text("GOT IT"));
         GOT_IT.clickAndWaitForNewWindow();
         UiObject add = new UiObject(new UiSelector().text("Add an email address"));
@@ -452,11 +497,14 @@ public class Mytest {
         UiObject MORE = new UiObject(new UiSelector().text("MORE"));
         MORE.clickAndWaitForNewWindow();
         sleep(15000);
-        UiObject agree2 = new UiObject(new UiSelector().text("I AGREE"));
-        agree2.clickAndWaitForNewWindow();
+        if (mDevice.hasObject(By.text("I AGREE"))) {
+            UiObject agree2 = new UiObject(new UiSelector().textContains("I AGREE"));
+            agree2.clickAndWaitForNewWindow();
+        }
         sleep(30000);
         UiObject taketoGmail = new UiObject(new UiSelector().text("TAKE ME TO GMAIL"));
         taketoGmail.clickAndWaitForNewWindow();
+        */
         for (int j = 0; j < sendmail_count; j++) {
             Log.d(TAG, "test_007: j=" + j);
             UiObject compose_button = new UiObject(new UiSelector().resourceId("com.google.android.gm.lite:id/compose_button"));
@@ -485,11 +533,12 @@ public class Mytest {
             }
             UiObject send = new UiObject(new UiSelector().resourceId("com.google.android.gm.lite:id/send"));
             send.clickAndWaitForNewWindow();
+            sleep(5000);
         }
         closeAPP(GmailPackageName);
         closeAPP(MusicPackageName);
         int endTime = (int) System.currentTimeMillis();
-        int testTime = ((endTime - startTime) / 1000) / 60;
+        int testTime = calculateTime(endTime, startTime);    //((endTime - startTime) / 1000) / 60;
         write(getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t" + testTime + "\t" + "test finish" + "\t" + "\n");
     }
 
@@ -501,9 +550,20 @@ public class Mytest {
         write(testcaseNo + "\t" + "PlayVideo test" + "\t" + getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t");
         int startTime = (int) System.currentTimeMillis();
         startApp(FilesPackageName, timeOut);
+
+        //使用扬声器外放，即使已经插入耳机   耳机、外放都有声音
+        AudioManager mAudioManager = (AudioManager) applicationContext.getSystemService(Context.AUDIO_SERVICE);
+        int maxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        Log.d(TAG, "test_006: maxVolume=" + maxVolume);
+        mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume, 0); //音量调到最大
+        mAudioManager.setMicrophoneMute(false);
+        mAudioManager.setSpeakerphoneOn(true);
+        mAudioManager.setMode(AudioManager.STREAM_MUSIC);
+
         if (FilesPackageName.contains("files")) {
             if (mDevice.hasObject(By.text("CONTINUE"))) {
-                UiObject continueButton = new UiObject(new UiSelector().textContains("continue"));
+                Log.d(TAG, "test_009: into CONTINUE");
+                UiObject continueButton = new UiObject(new UiSelector().text("CONTINUE"));
                 continueButton.clickAndWaitForNewWindow();
             }
             {
@@ -548,6 +608,7 @@ public class Mytest {
             int i;
             //15分钟的视频，循环播放4次
             for (i = 0; i < (playVideo_time / fifteenminstime); i++) {
+                Log.d(TAG, "test_009: playVideo_time / fifteenminstime ===" + (playVideo_time / fifteenminstime));
                 flag++;
                 Log.d(TAG, "flag: " + flag);
                 UiObject Button720p = new UiObject(new UiSelector().textContains("720P.mp4"));
@@ -601,7 +662,7 @@ public class Mytest {
             closeAPP(FilesPackageName);
         }
         int endTime = (int) System.currentTimeMillis();
-        int testTime = ((endTime - startTime) / 1000) / 60;
+        int testTime = calculateTime(endTime, startTime);    //((endTime - startTime) / 1000) / 60;
         write(getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t" + testTime + "\t" + "test finish" + "\t" + "\n");
 
     }
@@ -651,16 +712,16 @@ public class Mytest {
         }
         //进入游戏，时不时点击一下屏幕就ok啦
         int i;
-        int j = playgames_time / tenseconds;
+        int j = playgames_time / thirtyseconds;
         for (i = 0; i < j; i++) {
             Log.d(TAG, "test_games: into for()");
             mDevice.click(displayWidth / 2, displayHeight / 2);
             mDevice.click(displayWidth / 2, displayHeight / 2);
-            sleep(tenseconds);
+            sleep(thirtyseconds);
         }
         closeAPP(GamesPackageName);
         int endTime = (int) System.currentTimeMillis();
-        int testTime = ((endTime - startTime) / 1000) / 60;
+        int testTime = calculateTime(endTime, startTime);    //((endTime - startTime) / 1000) / 60;
         write(getTimeInfo() + "\t" + getBatterryVoltage() + "\t" + getBatterryElectric() + "\t" + testTime + "\t" + "test finish" + "\t" + "\n");
 
     }
@@ -1079,23 +1140,24 @@ public class Mytest {
                     case XmlPullParser.END_TAG: {
                         if ("resources".equals(nodeName)) {
                             Log.d("parseXMLWithPull",
-                                    "CooperatingPhoneNum"+CooperatingPhoneNum + "\n" +
-                                    "UTDPhoneNum"+UTDPhoneNum + "\n" +
-                                    "targetGmail"+targetGmail + "\n" +
-                                    "myGmailNumber"+myGmailNumber + "\n" +
-                                    "mygmailpassword"+mygmailpassword + "\n" +
-                                    "openWebTest_time"+openWebTest_time + "\n" +
-                                    "qqtalk_time"+qqtalk_time + "\n" +
-                                    "call_count"+call_count + "\n" +
-                                    "call_times"+call_times + "\n" +
-                                    "endCall_count"+endCall_count + "\n" +
-                                    "endCall_times"+endCall_times + "\n" +
-                                    "playMusic_time"+playMusic_time + "\n" +
-                                    "takePicture_count"+takePicture_count + "\n" +
-                                    "playVideo_time"+playVideo_time + "\n" +
-                                    "playgames_time"+playgames_time + "\n" +
-                                    "sendmail_count"+sendmail_count + "\n" +
-                                    "takeVideo_time"+takeVideo_time + "\n"
+                                    "bootThenStandby_time" + bootThenStandby_time + "\n" +
+                                            "CooperatingPhoneNum" + CooperatingPhoneNum + "\n" +
+                                            "UTDPhoneNum" + UTDPhoneNum + "\n" +
+                                            "targetGmail" + targetGmail + "\n" +
+                                            "myGmailNumber" + myGmailNumber + "\n" +
+                                            "mygmailpassword" + mygmailpassword + "\n" +
+                                            "openWebTest_time" + openWebTest_time + "\n" +
+                                            "qqtalk_time" + qqtalk_time + "\n" +
+                                            "call_count" + call_count + "\n" +
+                                            "call_times" + call_times + "\n" +
+                                            "endCall_count" + endCall_count + "\n" +
+                                            "endCall_times" + endCall_times + "\n" +
+                                            "playMusic_time" + playMusic_time + "\n" +
+                                            "takePicture_count" + takePicture_count + "\n" +
+                                            "playVideo_time" + playVideo_time + "\n" +
+                                            "playgames_time" + playgames_time + "\n" +
+                                            "sendmail_count" + sendmail_count + "\n" +
+                                            "takeVideo_time" + takeVideo_time + "\n"
                             );
                         }
                         break;
@@ -1111,7 +1173,7 @@ public class Mytest {
         }
     }
 
-    //打开settings，设置自动灭屏时间为5mins，设置Screen lock为none
+    //打开settings，设置自动灭屏时间为15s，设置Screen lock为none
     public static void setDisplayTimeandScreenLock() throws IOException {
         startApp(settingsPackageName, timeOut);
         try {
@@ -1119,7 +1181,7 @@ public class Mytest {
             Display.clickAndWaitForNewWindow();
             UiObject Sleep = new UiObject(new UiSelector().text("Sleep"));
             Sleep.clickAndWaitForNewWindow();
-            UiObject minutes = new UiObject(new UiSelector().text("5 minutes"));
+            UiObject minutes = new UiObject(new UiSelector().text("15 seconds"));
             minutes.clickAndWaitForNewWindow();
             mDevice.pressBack();
 
@@ -1136,11 +1198,31 @@ public class Mytest {
         } catch (UiObjectNotFoundException e) {
             e.printStackTrace();
         }
-
-
         closeAPP(settingsPackageName);
     }
 
+    //计算时间间隔，单位是min
+    public static int calculateTime(int starttime, int endtime) {
+        return Math.abs(endtime - starttime) / 1000 / 60;
+    }
+
+    private void setSpeakerphoneOn(boolean on) {
+        AudioManager audioManager = (AudioManager) applicationContext.getSystemService(Context.AUDIO_SERVICE);
+        if (on) {
+            audioManager.setSpeakerphoneOn(true);
+        } else {
+            audioManager.setSpeakerphoneOn(false);//关闭扬声器
+            audioManager.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_EARPIECE, AudioManager.ROUTE_ALL);
+            //把声音设定成Earpiece（听筒）出来，设定为正在通话中
+            audioManager.setMode(AudioManager.MODE_IN_CALL);
+        }
+    }
+
+    public static void setMaxStreamVolume() {
+        AudioManager mAudioManager = (AudioManager) applicationContext.getSystemService(Context.AUDIO_SERVICE);
+        int streamMaxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,streamMaxVolume,1);
+    }
 
 }
 

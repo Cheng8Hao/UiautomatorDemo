@@ -1,11 +1,9 @@
 package com.example.myapplication2;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -34,23 +32,31 @@ public class MainActivity extends AppCompatActivity {
     private static int standardtest_time;//小时
     private static final String configFILE_NAME = "/myconfig.xml";
     Button runBtn;
+    private Context context;
     /*, getsp;
     SharedPreferences autosp;
     SharedPreferences.Editor editor;*/
 
-    public class ShutdownBroadcastReceiver extends BroadcastReceiver {
+/*    public class ShutdownBroadcastReceiver extends BroadcastReceiver {
         private static final String TAG = "BroadcastReceiver";
         private static final String ACTION_SHUTDOWN = "android.intent.action.ACTION_SHUTDOWN";
 
         @Override
         public void onReceive(Context context, Intent intent) {  //即将关机时，要做的事情
             if (intent.getAction().equals(ACTION_SHUTDOWN)) {
-                Log.d(TAG, "shutonReceive: ");
+                Log.d(TAG, "onReceive: ");
                 endTime = (int) System.currentTimeMillis();
+                try {
+                    startTime= Settings.System.getInt(context.getContentResolver(), "uiauto_startTime");
+                } catch (Settings.SettingNotFoundException e) {
+                    Log.d(TAG, "onReceive: Settings.SettingNotFoundException e");
+                    e.printStackTrace();
+                }
                 Log.d(TAG, "onReceive: startTime=" + startTime);
                 Log.d(TAG, "onReceive: endTime=" + endTime);
                 int timegap = Math.abs(endTime - startTime)/1000;//秒
                 testTimeString = getTimeString(timegap);//
+                Log.d(TAG, "onReceive: timegap="+timegap+"standardtest_time="+standardtest_time);
                 Result = ((timegap / 60 / 60) > standardtest_time ? "pass" : "fail");
                 try {
                     //write("testcaseNo:" + "last" + "\n" + "endtime" + getTimeInfo() + "\n" + getBatterryInfo() + "\n");
@@ -65,20 +71,23 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
-    }
+    }*/
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        context = getApplicationContext();
         runBtn = (Button) findViewById(R.id.runBtn);
         /*getsp = (Button) findViewById(R.id.getsp);
         autosp = getSharedPreferences("autosp", MODE_PRIVATE);
         editor = autosp.edit();*/
-        IntentFilter filter = new IntentFilter();
+        /*IntentFilter filter = new IntentFilter();
         filter.addAction("android.intent.action.ACTION_SHUTDOWN");
         filter.addCategory("android.intent.category.HOME");
-        registerReceiver(new ShutdownBroadcastReceiver(), filter);
+        registerReceiver(new ShutdownBroadcastReceiver(), filter);*/
+        getcongif();
+        Settings.System.putInt(context.getContentResolver(), "standardtest_time", standardtest_time);
     }
 
     /**
@@ -87,19 +96,13 @@ public class MainActivity extends AppCompatActivity {
      * @param v
      */
     public void runMyUiautomator(View v) {
-        Log.i(TAG, "runMyUiautomator: ");
+        Log.d(TAG, "runMyUiautomator: ");
         startTime = (int) System.currentTimeMillis();
+        Settings.System.putInt(context.getContentResolver(),"uiauto_startTime",  startTime);
         Log.d(TAG, "runMyUiautomator: startTime==" + startTime);
         Toast.makeText(MainActivity.this, "test start... ", Toast.LENGTH_SHORT).show();
         new UiautomatorThread().start();
     }
-
-/*    public void getsp(View v) {
-        Log.i(TAG, "getsp: ");
-        String result1 = autosp.getString("result1", null);
-        String result2 = autosp.getString("result2", null);
-        Toast.makeText(MainActivity.this, result1 + result2, Toast.LENGTH_LONG).show();
-    }*/
 
     /**
      * 运行uiautomator是个费时的操作，不应该放在主线程，因此另起一个线程运行

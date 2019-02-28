@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">autoanswer</string>
+    <string name="autoanswer">这个apk是运行在配合手机上的，运行后会自动接听来电</string>
+</resources>
